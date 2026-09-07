@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Zoninval Tool</title>
+<meta name="description" content="Zie hoeveel schaduw omliggende panden werpen op een adres, door het jaar heen.">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink:#1b1c20; --paper:#ffffff; --line:#2a2b30; --muted:#767b84;
+    --accent:#FF5722; --good:#1f8f5c; --warn:#c08420; --bad:#c92f4b;
+    --radius:7px;
+  }
+  * { box-sizing:border-box; }
+  html, body { margin:0; padding:0; height:100%; font-family:'Space Grotesk', system-ui, sans-serif; color:var(--ink); }
+  #kaart { position:absolute; top:0; bottom:0; left:0; right:0; }
+  #paneel {
+    position:absolute; top:0; left:0; right:0;
+    background:var(--paper); padding:16px 20px; border-bottom:1.5px solid var(--line);
+    box-shadow:0 4px 14px rgba(20,20,25,.05);
+    z-index:1000;
+  }
+
+  .rij { display:flex; align-items:stretch; flex-wrap:wrap; gap:10px; }
+
+  .veld-wrap { position:relative; }
+
+  input[type=text], input[type=date] {
+    font-family:'Space Grotesk', system-ui, sans-serif;
+    font-size:14px; padding:9px 12px; border:1.5px solid var(--line); border-radius:var(--radius);
+    background:var(--paper); color:var(--ink); outline:none; transition:border-color .15s ease;
+  }
+  input[type=text]:focus, input[type=date]:focus { border-color:var(--accent); }
+  #adres { width:320px; }
+
+  #suggesties {
+    position:absolute; top:calc(100% + 4px); left:0; width:100%; z-index:1200;
+    background:var(--paper); border:1.5px solid var(--line); border-radius:var(--radius);
+    max-height:220px; overflow:hidden auto; box-shadow:0 8px 20px rgba(20,20,25,.08);
+    display:none;
+  }
+  #suggesties.open { display:block; }
+  #suggesties div {
+    padding:8px 12px; font-size:13px; cursor:pointer; border-bottom:1px solid #ececec;
+    transition:background-color .1s ease;
+  }
+  #suggesties div:last-child { border-bottom:none; }
+  #suggesties div.gemarkeerd, #suggesties div:hover { background:var(--ink); color:var(--paper); }
+
+  .knop {
+    font-family:'Space Grotesk', system-ui, sans-serif; font-weight:700; font-size:13px;
+    letter-spacing:.04em; text-transform:uppercase; padding:0 20px; border:1.5px solid var(--line);
+    border-radius:var(--radius); background:var(--ink); color:var(--paper); cursor:pointer;
+    transition:background-color .15s ease, border-color .15s ease, color .15s ease;
+  }
+  .knop:hover { background:var(--accent); border-color:var(--accent); color:var(--ink); }
+  .knop:disabled { opacity:.5; cursor:default; }
+
+  .seizoenrij { margin-top:12px; display:flex; align-items:center; flex-wrap:wrap; gap:8px; }
+  .seizoenrij .caption { margin-right:2px; }
+
+  .pill {
+    font-family:'Space Grotesk', system-ui, sans-serif; font-weight:700; font-size:12px;
+    letter-spacing:.03em; text-transform:uppercase; padding:6px 14px; border:1.5px solid var(--line);
+    border-radius:999px; background:var(--paper); color:var(--ink); cursor:pointer;
+    transition:background-color .15s ease, color .15s ease, border-color .15s ease;
+  }
+  .pill:hover { background:var(--ink); color:var(--paper); }
+  .pill.actief { background:var(--accent); border-color:var(--accent); color:var(--ink); }
+
+  .caption {
+    font-size:11px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:var(--muted);
+  }
+  #seizoenLabel { color:var(--ink); }
+  #seizoenLabel:before { content:"▪ "; color:var(--accent); }
+  #seizoenLabel:empty:before { content:""; }
+
+  #tijdWeergave, #voortgangWrap {
+    margin-top:14px; display:flex; align-items:center; gap:20px; flex-wrap:wrap;
+    padding:12px 16px; border:1.5px solid var(--line); border-radius:var(--radius); background:var(--paper);
+    box-shadow:0 2px 10px rgba(20,20,25,.04);
+  }
+  #tijdWeergave.verborgen, #voortgangWrap.verborgen { display:none; }
+  #voortgangWrap { flex-direction:column; align-items:stretch; gap:6px; }
+  #voortgangBalk-wrap { width:100%; height:10px; border:1.5px solid var(--line); border-radius:999px; position:relative; overflow:hidden; }
+  #voortgangBalk { position:absolute; top:0; left:0; bottom:0; background:var(--accent); width:0%; transition:width .3s ease; }
+  #tijdGroot { font-size:2.4rem; font-weight:700; font-variant-numeric:tabular-nums; line-height:1; }
+
+  .gauge-wrap { display:flex; flex-direction:column; gap:4px; min-width:140px; }
+  .gauge { width:140px; height:10px; border:1.5px solid var(--line); border-radius:999px; background:var(--paper); position:relative; overflow:hidden; }
+  .gauge > div { position:absolute; top:0; left:0; bottom:0; background:var(--accent); transition:width .3s ease; }
+  .gauge-label { font-size:11px; font-weight:700; letter-spacing:.05em; text-transform:uppercase; color:var(--muted); }
+
+  #percentageBadge {
+    font-family:'Space Grotesk', system-ui, sans-serif; font-size:13px; font-weight:700;
+    letter-spacing:.03em; text-transform:uppercase; padding:6px 12px; border:1.5px solid var(--line);
+    border-radius:var(--radius); color:var(--paper);
+  }
+
+  #slider { width:100%; margin-top:14px; -webkit-appearance:none; height:3px; border-radius:999px; background:var(--line); outline:none; }
+  #slider::-webkit-slider-thumb {
+    -webkit-appearance:none; width:16px; height:16px; border-radius:50%; background:var(--ink); border:1.5px solid var(--ink); cursor:pointer;
+  }
+  #slider::-moz-range-thumb { width:16px; height:16px; border-radius:50%; background:var(--ink); border:1.5px solid var(--ink); cursor:pointer; }
+
+  .sliderlabels { display:flex; justify-content:space-between; font-size:11px; font-weight:700; color:var(--muted); margin-top:4px; letter-spacing:.03em; }
+
+  #info { margin-top:10px; font-size:12px; color:var(--muted); }
+  #fout { color:var(--bad); font-weight:700; font-size:12px; margin-top:6px; }
+
+  #footer {
+    position:absolute; bottom:8px; right:12px; z-index:900; font-size:11px; color:var(--muted);
+    background:rgba(255,255,255,.85); padding:2px 8px; border-radius:999px;
+  }
+  #footer a { color:var(--muted); }
+</style>
+</head>
+<body>
+<div id="paneel">
+  <div class="rij">
+    <div class="veld-wrap">
+      <input id="adres" type="text" placeholder="Adres, bijv. Nieuwezijds Voorburgwal 147, Amsterdam" autocomplete="off">
+      <div id="suggesties"></div>
+    </div>
+    <input id="datum" type="date">
+    <button id="zoekknop" class="knop">Zoeken</button>
+    <span id="seizoenLabel" class="caption" style="align-self:center;"></span>
+  </div>
+
+  <div class="seizoenrij">
+    <span class="caption">Snel vergelijken —</span>
+    <button type="button" class="pill" data-maand="3" data-dag="20">Lente · 20 mrt</button>
+    <button type="button" class="pill" data-maand="6" data-dag="21">Zomer · 21 jun</button>
+    <button type="button" class="pill" data-maand="9" data-dag="23">Herfst · 23 sep</button>
+    <button type="button" class="pill" data-maand="12" data-dag="21">Winter · 21 dec</button>
+  </div>
+
+  <div id="tijdWeergave" class="verborgen">
+    <span id="tijdGroot">--:--</span>
+    <div class="gauge-wrap">
+      <div class="gauge-label">Zonshoogte <span id="zonInfo">0°</span></div>
+      <div class="gauge"><div id="zonGauge" style="width:0%"></div></div>
+    </div>
+    <span id="percentageBadge"></span>
+  </div>
+
+  <div id="voortgangWrap" class="verborgen">
+    <div class="gauge-label" id="voortgangTekst">Bezig met ophalen...</div>
+    <div id="voortgangBalk-wrap"><div id="voortgangBalk"></div></div>
+  </div>
+
+  <input id="slider" type="range" min="0" max="0" value="0" disabled>
+  <div class="sliderlabels"><span>06:00</span><span>12:00</span><span>18:00</span><span>22:00</span></div>
+  <div id="info">Vul een adres in en klik op Zoeken.</div>
+  <div id="fout"></div>
+</div>
+<div id="kaart"></div>
+<div id="footer">Draait volledig in je browser · data: PDOK &amp; 3D BAG · <a href="https://github.com/bastiaanvdh/zoninval-tool" target="_blank" rel="noopener">broncode</a></div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://unpkg.com/@turf/turf@6.5.0/turf.min.js"></script>
+<script src="https://unpkg.com/suncalc@1.9.0/suncalc.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

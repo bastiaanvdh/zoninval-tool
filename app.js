@@ -300,22 +300,8 @@ let schaduwLaag = null, gebouwenLaag = null, doelpandLaag = null, perceelLaag = 
 
 document.getElementById("datum").valueAsDate = new Date();
 
-const SEIZOENEN = ["winter", "lente", "zomer", "herfst"];
-
-function seizoenVoorDatum(datumStr) {
-  if (!datumStr) return null;
-  const maand = parseInt(datumStr.split("-")[1], 10);
-  if (maand === 12 || maand <= 2) return SEIZOENEN[0];
-  if (maand <= 5) return SEIZOENEN[1];
-  if (maand <= 8) return SEIZOENEN[2];
-  return SEIZOENEN[3];
-}
-
-function werkSeizoenLabelBij() {
+function werkActievePilBij() {
   const datumEl = document.getElementById("datum");
-  const label = document.getElementById("seizoenLabel");
-  label.textContent = seizoenVoorDatum(datumEl.value) || "";
-
   document.querySelectorAll(".pill").forEach((knop) => {
     const maand = parseInt(knop.dataset.maand, 10);
     const dag = parseInt(knop.dataset.dag, 10);
@@ -325,8 +311,8 @@ function werkSeizoenLabelBij() {
   zetKaartMarge();
 }
 
-document.getElementById("datum").addEventListener("change", werkSeizoenLabelBij);
-werkSeizoenLabelBij();
+document.getElementById("datum").addEventListener("change", werkActievePilBij);
+werkActievePilBij();
 
 document.querySelectorAll(".pill").forEach((knop) => {
   knop.addEventListener("click", () => {
@@ -335,7 +321,7 @@ document.querySelectorAll(".pill").forEach((knop) => {
     const maand = knop.dataset.maand.padStart(2, "0");
     const dag = knop.dataset.dag.padStart(2, "0");
     datumEl.value = `${huidigJaar}-${maand}-${dag}`;
-    werkSeizoenLabelBij();
+    werkActievePilBij();
     if (adresEl.value.trim()) zoek();
   });
 });

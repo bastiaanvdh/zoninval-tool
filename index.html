@@ -75,9 +75,6 @@
   .caption {
     font-size:11px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:var(--muted);
   }
-  #seizoenLabel { color:var(--ink); }
-  #seizoenLabel:before { content:"▪ "; color:var(--accent); }
-  #seizoenLabel:empty:before { content:""; }
 
   #tijdWeergave, #voortgangWrap {
     margin-top:14px; display:flex; align-items:center; gap:20px; flex-wrap:wrap;
@@ -144,7 +141,6 @@
     </div>
     <input id="datum" type="date">
     <button id="zoekknop" class="knop">Zoeken</button>
-    <span id="seizoenLabel" class="caption" style="align-self:center;"></span>
   </div>
 
   <div class="seizoenrij">
@@ -179,6 +175,6 @@
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://unpkg.com/@turf/turf@6.5.0/turf.min.js"></script>
 <script src="https://unpkg.com/suncalc@1.9.0/suncalc.js"></script>
-<script src="app.js?v=2"></script>
+<script src="app.js?v=3"></script>
 </body>
 </html>

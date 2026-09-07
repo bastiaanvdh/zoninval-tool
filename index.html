@@ -95,12 +95,6 @@
   .gauge > div { position:absolute; top:0; left:0; bottom:0; background:var(--accent); transition:width .3s ease; }
   .gauge-label { font-size:11px; font-weight:700; letter-spacing:.05em; text-transform:uppercase; color:var(--muted); }
 
-  #percentageBadge {
-    font-family:'Space Grotesk', system-ui, sans-serif; font-size:13px; font-weight:700;
-    letter-spacing:.03em; text-transform:uppercase; padding:6px 12px; border:1.5px solid var(--line);
-    border-radius:var(--radius); color:var(--paper);
-  }
-
   #slider { width:100%; margin-top:14px; -webkit-appearance:none; height:3px; border-radius:999px; background:var(--line); outline:none; }
   #slider::-webkit-slider-thumb {
     -webkit-appearance:none; width:16px; height:16px; border-radius:50%; background:var(--ink); border:1.5px solid var(--ink); cursor:pointer;
@@ -167,7 +161,6 @@
       <div class="gauge-label">Zonshoogte <span id="zonInfo">0°</span></div>
       <div class="gauge"><div id="zonGauge" style="width:0%"></div></div>
     </div>
-    <span id="percentageBadge"></span>
   </div>
 
   <div id="voortgangWrap" class="verborgen">

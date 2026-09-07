@@ -490,12 +490,6 @@ function verwerkResultaat() {
   toonTijdstip(slider.value);
 }
 
-function kleurVoorPercentage(pct) {
-  if (pct < 25) return "var(--good)";
-  if (pct < 60) return "var(--warn)";
-  return "var(--bad)";
-}
-
 function toonTijdstip(index) {
   if (!data || !data.tijdstippen.length) return;
   const t = data.tijdstippen[index];
@@ -513,9 +507,6 @@ function toonTijdstip(index) {
   document.getElementById("tijdGroot").textContent = t.tijd;
   document.getElementById("zonInfo").textContent = `${t.elevatie}°`;
   document.getElementById("zonGauge").style.width = `${Math.min((t.elevatie / 90) * 100, 100)}%`;
-  const badge = document.getElementById("percentageBadge");
-  badge.textContent = `${t.percentage_beschaduwd}% beschaduwd`;
-  badge.style.background = kleurVoorPercentage(t.percentage_beschaduwd);
   zetKaartMarge();
 }
 

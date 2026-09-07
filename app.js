@@ -165,6 +165,12 @@ function amsterdamNaarUTC(jaar, maand, dag, uur, minuut) {
   return new Date(naiefUTC - offsetMs);
 }
 
+function formatAmsterdamTijd(dateObj) {
+  return new Intl.DateTimeFormat("nl-NL", {
+    timeZone: "Europe/Amsterdam", hour: "2-digit", minute: "2-digit",
+  }).format(dateObj);
+}
+
 // ---------------------------------------------------------------------------
 // Orkestratie: adres -> geodata (gecachet) -> schaduwberekening per tijdstip
 // ---------------------------------------------------------------------------
@@ -270,11 +276,16 @@ function bouwSchaduwResultaat(d, datumStr) {
     });
   }
 
+  const middagReferentie = amsterdamNaarUTC(jaar, maand, dag, 12, 0);
+  const zonTijden = SunCalc.getTimes(middagReferentie, loc.lat, loc.lon);
+
   return {
     adres: loc.weergavenaam,
     doelpand_geojson: doelpandFeat.geometry,
     perceel_geojson: perceelFeat ? perceelFeat.geometry : null,
     gebouwen_geojson: turf.featureCollection(gebouwen.map((g) => g.feature)),
+    zonsopgang: formatAmsterdamTijd(zonTijden.sunrise),
+    zonsondergang: formatAmsterdamTijd(zonTijden.sunset),
     tijdstippen,
   };
 }
@@ -449,6 +460,33 @@ async function zoek() {
   }
 }
 
+// De sliderschaal loopt vast van 06:00 tot 22:00 (zie .sliderlabels) -- deze
+// zet een "HH:MM" om naar de horizontale positie (%) op die schaal.
+function percentageVoorTijdstring(hhmm) {
+  const [uur, minuut] = hhmm.split(":").map(Number);
+  const totaalMin = uur * 60 + minuut;
+  const pct = ((totaalMin - 6 * 60) / (16 * 60)) * 100;
+  // Marge van 4% zodat het label (gecentreerd op deze positie) nooit buiten het
+  // paneel valt op de langste/kortste dagen, wanneer op- of ondergang net buiten
+  // de 06:00-22:00 schaal valt.
+  return Math.max(4, Math.min(96, pct));
+}
+
+function toonZonMerken() {
+  const opgang = document.getElementById("zonsopgangMerk");
+  const ondergang = document.getElementById("zonsondergangMerk");
+  if (data.zonsopgang) {
+    opgang.textContent = `Op ${data.zonsopgang}`;
+    opgang.style.left = `${percentageVoorTijdstring(data.zonsopgang)}%`;
+    opgang.style.display = "block";
+  }
+  if (data.zonsondergang) {
+    ondergang.textContent = `Onder ${data.zonsondergang}`;
+    ondergang.style.left = `${percentageVoorTijdstring(data.zonsondergang)}%`;
+    ondergang.style.display = "block";
+  }
+}
+
 function verwerkResultaat() {
   if (gebouwenLaag) map.removeLayer(gebouwenLaag);
   if (doelpandLaag) map.removeLayer(doelpandLaag);
@@ -466,6 +504,7 @@ function verwerkResultaat() {
   slider.min = 0;
   slider.max = Math.max(data.tijdstippen.length - 1, 0);
   slider.disabled = data.tijdstippen.length === 0;
+  toonZonMerken();
 
   if (data.tijdstippen.length === 0) {
     document.getElementById("fout").textContent = "Geen tijdstippen met zon boven de horizon gevonden voor deze datum.";

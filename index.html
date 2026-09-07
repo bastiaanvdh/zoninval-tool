@@ -117,6 +117,28 @@
     background:rgba(255,255,255,.85); padding:2px 8px; border-radius:999px;
   }
   #footer a { color:var(--muted); }
+
+  /* Op een telefoonbreedte moet je de kaart nog kunnen zien zonder eerst te
+     scrollen -- vooral de seizoensrij (die anders 2 regels kost) gaat hier
+     horizontaal scrollen i.p.v. wrappen, en de marges/padding krimpen wat. */
+  @media (max-width: 480px) {
+    #paneel { padding:12px 14px; }
+    .rij { gap:8px; }
+    .veld-wrap { flex:1 1 200px; }
+    #adres { width:100%; }
+    .seizoenrij {
+      margin-top:10px; flex-wrap:nowrap; overflow-x:auto; -webkit-overflow-scrolling:touch;
+      padding-bottom:4px; scrollbar-width:none;
+    }
+    .seizoenrij::-webkit-scrollbar { display:none; }
+    .seizoenrij .caption, .pill { white-space:nowrap; flex:0 0 auto; }
+    #tijdWeergave, #voortgangWrap { margin-top:10px; padding:10px 12px; gap:12px; }
+    #tijdGroot { font-size:1.9rem; }
+    .gauge-wrap { min-width:0; }
+    .gauge { width:110px; }
+    #slider { margin-top:10px; }
+    .sliderlabels { margin-top:3px; }
+  }
 </style>
 </head>
 <body>
